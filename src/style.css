@@ -21,10 +21,16 @@ body {
   display: grid;
   place-items: center;
   touch-action: none;
+  overscroll-behavior: none;
 }
 
 canvas {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   outline: none;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
 }

@@ -21,8 +21,17 @@ export class UIScene extends Phaser.Scene {
   private dialog!: DialogBox;
   private tooltip!: Tooltip;
 
+  private interactButton!: PixelButton;
+  private waterButton!: PixelButton;
+  private petButton!: PixelButton;
+  private cancelButton!: PixelButton;
+  private shopButton!: PixelButton;
+  private photoButton!: PixelButton;
+
   private shopPanel!: Phaser.GameObjects.Container;
   private shopVisible = false;
+  private rotateOverlay!: Phaser.GameObjects.Container;
+  private actionButtonsEnabled = true;
 
   constructor() {
     super('UIScene');
@@ -66,28 +75,29 @@ export class UIScene extends Phaser.Scene {
     this.dialog = new DialogBox(this, GAME_WIDTH / 2, 68, 600, 74);
     this.tooltip = new Tooltip(this);
 
-    const interact = new PixelButton(this, GAME_WIDTH - 90, GAME_HEIGHT - 90, 'Use', 96, 72);
-    interact.onClick(() => house.handleHUDAction('interact'));
+    this.interactButton = new PixelButton(this, GAME_WIDTH - 90, GAME_HEIGHT - 90, 'Use', 96, 72);
+    this.interactButton.onClick(() => house.handleHUDAction('interact'));
 
-    const water = new PixelButton(this, GAME_WIDTH - 200, GAME_HEIGHT - 90, 'Water+', 112, 72);
-    water.onClick(() => house.handleHUDAction('fillWater'));
+    this.waterButton = new PixelButton(this, GAME_WIDTH - 200, GAME_HEIGHT - 90, 'Water+', 112, 72);
+    this.waterButton.onClick(() => house.handleHUDAction('fillWater'));
 
-    const pet = new PixelButton(this, GAME_WIDTH - 320, GAME_HEIGHT - 90, 'Pet', 96, 72);
-    pet.onClick(() => house.handleHUDAction('pet'));
+    this.petButton = new PixelButton(this, GAME_WIDTH - 320, GAME_HEIGHT - 90, 'Pet', 96, 72);
+    this.petButton.onClick(() => house.handleHUDAction('pet'));
 
-    const cancel = new PixelButton(this, 90, GAME_HEIGHT - 90, 'Cancel', 120, 72);
-    cancel.onClick(() => house.handleHUDAction('cancel'));
+    this.cancelButton = new PixelButton(this, 90, GAME_HEIGHT - 90, 'Cancel', 120, 72);
+    this.cancelButton.onClick(() => house.handleHUDAction('cancel'));
 
-    const shop = new PixelButton(this, 230, GAME_HEIGHT - 90, 'Shop', 120, 72);
-    shop.onClick(() => {
+    this.shopButton = new PixelButton(this, 230, GAME_HEIGHT - 90, 'Shop', 120, 72);
+    this.shopButton.onClick(() => {
       this.shopVisible = !this.shopVisible;
       this.shopPanel.setVisible(this.shopVisible);
     });
 
-    const photo = new PixelButton(this, 370, GAME_HEIGHT - 90, 'Photo', 120, 72);
-    photo.onClick(() => this.takeSnapshot());
+    this.photoButton = new PixelButton(this, 370, GAME_HEIGHT - 90, 'Photo', 120, 72);
+    this.photoButton.onClick(() => this.takeSnapshot());
 
     this.createShopPanel(house);
+    this.createRotateOverlay();
 
     this.game.events.on(Events.NeedsUpdated, (needs: NeedsState) => this.needsBars.setNeeds(needs));
     this.game.events.on(Events.TaskUpdated, (tasks: TaskState) => this.taskList.setTasks(tasks));
@@ -124,6 +134,12 @@ export class UIScene extends Phaser.Scene {
     this.dayText.setText(`Day ${state.timeState.dayCount}`);
     this.coinsText.setText(`Coins: ${state.economyState.coins}`);
     this.bondText.setText(`Bond: ${state.bondState.value}`);
+
+    this.scale.on(Phaser.Scale.Events.RESIZE, this.applyResponsiveLayout, this);
+    this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off(Phaser.Scale.Events.RESIZE, this.applyResponsiveLayout, this);
+    });
+    this.applyResponsiveLayout();
   }
 
   private createShopPanel(house: HouseScene): void {
@@ -177,6 +193,106 @@ export class UIScene extends Phaser.Scene {
     });
 
     this.shopPanel.setVisible(false);
+  }
+
+  private createRotateOverlay(): void {
+    const blocker = this.add
+      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x06080f, 0.88)
+      .setInteractive();
+    blocker.on('pointerdown', (_pointer: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
+      event.stopPropagation();
+    });
+
+    const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 30, 'Rotate Device', {
+      fontFamily: 'monospace',
+      fontSize: '44px',
+      color: '#f5ffe6',
+      stroke: '#101820',
+      strokeThickness: 5,
+    }).setOrigin(0.5);
+
+    const subtitle = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 28, 'Play in landscape mode for full controls', {
+      fontFamily: 'monospace',
+      fontSize: '20px',
+      color: '#dbe8ff',
+    }).setOrigin(0.5);
+
+    this.rotateOverlay = this.add.container(0, 0, [blocker, title, subtitle]);
+    this.rotateOverlay.setDepth(1000);
+    this.rotateOverlay.setVisible(false);
+  }
+
+  private setActionButtonsEnabled(enabled: boolean): void {
+    if (this.actionButtonsEnabled === enabled) {
+      return;
+    }
+
+    const controls = [
+      this.interactButton,
+      this.waterButton,
+      this.petButton,
+      this.cancelButton,
+      this.shopButton,
+      this.photoButton,
+    ];
+
+    for (const control of controls) {
+      if (enabled) {
+        control.enable();
+      } else {
+        control.disableInteractive();
+      }
+    }
+
+    this.actionButtonsEnabled = enabled;
+  }
+
+  private applyResponsiveLayout(): void {
+    const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+    const shortEdge = Math.min(window.innerWidth, window.innerHeight);
+    const isMobileLike = coarsePointer && shortEdge <= 960;
+    const isLandscape = window.innerWidth > window.innerHeight;
+    const mobileLandscape = isMobileLike && isLandscape;
+    const mobilePortrait = isMobileLike && !isLandscape;
+
+    const displayScale = Math.min(this.scale.displaySize.width / GAME_WIDTH, this.scale.displaySize.height / GAME_HEIGHT);
+    let buttonScale = 1;
+    let panelScale = 1;
+
+    if (mobileLandscape) {
+      // Keep physical button size comfortable even when the canvas is letterboxed.
+      buttonScale = Phaser.Math.Clamp(82 / Math.max(36, 72 * displayScale), 1.05, 1.85);
+      panelScale = Phaser.Math.Clamp(56 / Math.max(26, 28 * displayScale), 1.05, 1.55);
+    }
+
+    const rightY = GAME_HEIGHT - 84 * buttonScale;
+    this.interactButton.setScale(buttonScale).setPosition(GAME_WIDTH - 86 * buttonScale, rightY);
+    this.waterButton.setScale(buttonScale).setPosition(GAME_WIDTH - 210 * buttonScale, rightY);
+    this.petButton.setScale(buttonScale).setPosition(GAME_WIDTH - 332 * buttonScale, rightY);
+
+    const leftBottomY = GAME_HEIGHT - 84 * buttonScale;
+    const leftTopY = mobileLandscape ? leftBottomY - 86 * buttonScale : leftBottomY;
+    this.cancelButton.setScale(buttonScale).setPosition(88 * buttonScale, leftBottomY);
+    this.shopButton.setScale(buttonScale).setPosition(230 * buttonScale, leftTopY);
+    this.photoButton.setScale(buttonScale).setPosition(372 * buttonScale, leftTopY);
+
+    this.needsBars.setScale(panelScale).setPosition(22, 30);
+    this.taskList.setScale(panelScale).setPosition(GAME_WIDTH - 210 * panelScale - 8, 30);
+
+    const footerScale = mobileLandscape ? Phaser.Math.Clamp(0.72 / Math.max(0.4, displayScale), 1.0, 1.35) : 1;
+    this.clockText.setScale(footerScale).setPosition(24, GAME_HEIGHT - 36);
+    this.dayText.setScale(footerScale).setPosition(220, GAME_HEIGHT - 36);
+    this.coinsText.setScale(footerScale).setPosition(390, GAME_HEIGHT - 36);
+    this.bondText.setScale(footerScale).setPosition(560, GAME_HEIGHT - 36);
+
+    this.shopPanel.setScale(mobileLandscape ? 1.12 : 1).setPosition(24, mobileLandscape ? 124 : 150);
+
+    this.rotateOverlay.setVisible(mobilePortrait);
+    if (mobilePortrait && this.shopVisible) {
+      this.shopVisible = false;
+      this.shopPanel.setVisible(false);
+    }
+    this.setActionButtonsEnabled(!mobilePortrait);
   }
 
   private takeSnapshot(): void {
