@@ -7,6 +7,7 @@ import { HouseScene } from './scenes/HouseScene';
 import { ProfileScene } from './scenes/ProfileScene';
 import { TitleScene } from './scenes/TitleScene';
 import { UIScene } from './scenes/UIScene';
+import { registerSW } from 'virtual:pwa-register';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -43,3 +44,5 @@ const config: Phaser.Types.Core.GameConfig = {
 };
 
 new Phaser.Game(config);
+
+registerSW({ immediate: true });
