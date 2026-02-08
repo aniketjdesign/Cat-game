@@ -601,6 +601,67 @@ function drawToyBasket(ctx: CanvasRenderingContext2D): void {
   px(ctx, 25, 3, featherSh);
 }
 
+function drawCatTree(ctx: CanvasRenderingContext2D): void {
+  const post = '#A67A4A';
+  const postSh = '#7E5832';
+  const platform = '#D4BE98';
+  const platformSh = '#B09672';
+  const base = '#6E5A46';
+  const baseHi = '#8A735C';
+  const ol = '#34261A';
+
+  rect(ctx, 6, 27, 20, 3, 'rgba(0,0,0,0.14)');
+
+  rect(ctx, 8, 22, 16, 1, ol);
+  rect(ctx, 7, 23, 18, 3, base);
+  rect(ctx, 8, 23, 16, 1, baseHi);
+  rect(ctx, 7, 25, 18, 1, ol);
+
+  rect(ctx, 14, 11, 4, 12, post);
+  rect(ctx, 17, 11, 1, 12, postSh);
+
+  for (let y = 12; y < 23; y += 2) {
+    rect(ctx, 14, y, 4, 1, '#BE8D55');
+  }
+
+  rect(ctx, 8, 8, 16, 1, ol);
+  rect(ctx, 7, 9, 18, 3, platform);
+  rect(ctx, 8, 9, 16, 1, '#E8D3AF');
+  rect(ctx, 7, 11, 18, 1, platformSh);
+
+  rect(ctx, 21, 5, 5, 2, platform);
+  rect(ctx, 20, 7, 7, 1, platformSh);
+  rect(ctx, 20, 4, 7, 1, ol);
+}
+
+function drawCatBed(ctx: CanvasRenderingContext2D): void {
+  const rim = '#AF6B8E';
+  const rimHi = '#C88BB2';
+  const rimSh = '#8D4F70';
+  const cushion = '#F2E4D2';
+  const cushionSh = '#D7C6B0';
+  const ol = '#3A2530';
+
+  rect(ctx, 5, 26, 22, 3, 'rgba(0,0,0,0.12)');
+
+  rect(ctx, 6, 16, 20, 1, ol);
+  rect(ctx, 5, 17, 22, 1, rimHi);
+  rect(ctx, 4, 18, 24, 1, ol);
+
+  rect(ctx, 4, 19, 24, 7, rim);
+  rect(ctx, 5, 19, 3, 6, rimHi);
+  rect(ctx, 24, 19, 3, 6, rimSh);
+  rect(ctx, 5, 25, 22, 1, rimSh);
+
+  rect(ctx, 8, 19, 16, 6, cushion);
+  rect(ctx, 9, 19, 14, 1, '#FCF2E6');
+  rect(ctx, 9, 24, 14, 1, cushionSh);
+
+  px(ctx, 12, 21, cushionSh);
+  px(ctx, 15, 22, cushionSh);
+  px(ctx, 19, 21, cushionSh);
+}
+
 function drawUIPanel(ctx: CanvasRenderingContext2D): void {
   const bg = '#E8EED8';
   const border = '#8BAE6A';
@@ -676,5 +737,7 @@ export function generateRoomSprites(scene: Phaser.Scene): void {
   drawObjectSprite(scene, 'obj_litter_box', drawLitterBox);
   drawObjectSprite(scene, 'obj_cabinet', drawCabinet);
   drawObjectSprite(scene, 'obj_toy_basket', drawToyBasket);
+  drawObjectSprite(scene, 'obj_cat_tree', drawCatTree);
+  drawObjectSprite(scene, 'obj_cat_bed', drawCatBed);
   drawObjectSprite(scene, 'ui_panel', drawUIPanel);
 }

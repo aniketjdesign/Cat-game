@@ -34,31 +34,36 @@ export class UIScene extends Phaser.Scene {
     this.needsBars = new NeedsBars(this, 24, 36);
     this.taskList = new TaskChecklist(this, GAME_WIDTH - 210, 30);
 
-    this.clockText = this.add.text(24, GAME_HEIGHT - 36, 'Time', {
+    // bottom status bar with dark wood panel
+    const barY = GAME_HEIGHT - 38;
+    this.add.rectangle(GAME_WIDTH / 2, barY + 2, GAME_WIDTH - 20, 28, 0x5c3d2e).setOrigin(0.5);
+    this.add.rectangle(GAME_WIDTH / 2, barY + 2, GAME_WIDTH - 24, 24, 0x1a1410, 0.9).setOrigin(0.5);
+
+    this.clockText = this.add.text(24, barY, 'Time', {
       fontFamily: 'monospace',
-      fontSize: '20px',
-      color: '#ffffff',
+      fontSize: '18px',
+      color: '#f5e6c8',
     });
 
-    this.dayText = this.add.text(220, GAME_HEIGHT - 36, 'Day 1', {
+    this.dayText = this.add.text(220, barY, 'Day 1', {
       fontFamily: 'monospace',
-      fontSize: '20px',
-      color: '#ffffff',
+      fontSize: '18px',
+      color: '#f5e6c8',
     });
 
-    this.coinsText = this.add.text(390, GAME_HEIGHT - 36, 'Coins: 0', {
+    this.coinsText = this.add.text(390, barY, 'Coins: 0', {
       fontFamily: 'monospace',
-      fontSize: '20px',
-      color: '#fff4a2',
+      fontSize: '18px',
+      color: '#e5c040',
     });
 
-    this.bondText = this.add.text(560, GAME_HEIGHT - 36, 'Bond: 0', {
+    this.bondText = this.add.text(560, barY, 'Bond: 0', {
       fontFamily: 'monospace',
-      fontSize: '20px',
-      color: '#ffd4f2',
+      fontSize: '18px',
+      color: '#e8a0b8',
     });
 
-    this.dialog = new DialogBox(this, GAME_WIDTH / 2, GAME_HEIGHT - 128, 560, 84);
+    this.dialog = new DialogBox(this, GAME_WIDTH / 2, 68, 600, 74);
     this.tooltip = new Tooltip(this);
 
     const interact = new PixelButton(this, GAME_WIDTH - 90, GAME_HEIGHT - 90, 'Use', 96, 72);
@@ -105,8 +110,8 @@ export class UIScene extends Phaser.Scene {
     this.game.events.on(Events.AchievementUnlocked, (achievement: AchievementEntry) => {
       this.dialog.show(`Achievement: ${achievement.title}`, 2400);
     });
-    this.game.events.on(Events.InteractionEnter, (payload: { label: string; x: number; y: number }) => {
-      this.tooltip.show(payload.label, payload.x, payload.y);
+    this.game.events.on(Events.InteractionEnter, (payload: { label: string; hint?: string; x: number; y: number }) => {
+      this.tooltip.show(payload.hint ? `${payload.label}: ${payload.hint}` : payload.label, payload.x, payload.y);
     });
     this.game.events.on(Events.InteractionExit, () => {
       this.tooltip.hide();
@@ -122,34 +127,51 @@ export class UIScene extends Phaser.Scene {
   }
 
   private createShopPanel(house: HouseScene): void {
-    this.shopPanel = this.add.container(200, 240);
-    const bg = this.add.rectangle(0, 0, 360, 280, 0x14161f, 0.92).setOrigin(0);
-    bg.setStrokeStyle(3, 0xbecf98);
-    this.shopPanel.add(bg);
+    const panelWidth = 400;
+    const panelHeight = 92 + DECOR_ITEMS.length * 52;
+
+    this.shopPanel = this.add.container(24, 150);
+
+    // dark-wood framed shop panel
+    const border = this.add.rectangle(-3, -3, panelWidth + 6, panelHeight + 6, 0x5c3d2e).setOrigin(0);
+    const bg = this.add.rectangle(0, 0, panelWidth, panelHeight, 0x1a1410, 0.95).setOrigin(0);
+    bg.setStrokeStyle(2, 0x8b6b42);
+    this.shopPanel.add([border, bg]);
 
     const title = this.add.text(20, 16, 'Decor Shop', {
       fontFamily: 'monospace',
-      fontSize: '24px',
-      color: '#f5f5f5',
+      fontSize: '22px',
+      color: '#c49a5a',
     });
     this.shopPanel.add(title);
 
+    // divider under title
+    const divider = this.add.rectangle(20, 46, panelWidth - 40, 1, 0x5c3d2e).setOrigin(0);
+    this.shopPanel.add(divider);
+
     DECOR_ITEMS.forEach((item, index) => {
-      const y = 64 + index * 52;
+      const y = 56 + index * 52;
       const row = this.add
-        .rectangle(20, y, 320, 44, Phaser.Display.Color.HexStringToColor(item.themeColor).color, 0.22)
+        .rectangle(16, y, panelWidth - 32, 46, Phaser.Display.Color.HexStringToColor(item.themeColor).color, 0.18)
         .setOrigin(0);
-      row.setStrokeStyle(1, 0xffffff, 0.2);
+      row.setStrokeStyle(1, 0x8b6b42, 0.4);
       this.shopPanel.add(row);
 
-      const text = this.add.text(30, y + 10, `${item.label} - ${item.cost}c`, {
+      const text = this.add.text(26, y + 6, `${item.label} - ${item.cost}c`, {
         fontFamily: 'monospace',
-        fontSize: '16px',
-        color: '#ffffff',
+        fontSize: '15px',
+        color: '#f5e6c8',
       });
       this.shopPanel.add(text);
 
-      const buy = new PixelButton(this, 300, y + 22, 'Buy', 70, 40);
+      const subtitle = this.add.text(26, y + 25, item.description, {
+        fontFamily: 'monospace',
+        fontSize: '12px',
+        color: '#c49a5a',
+      });
+      this.shopPanel.add(subtitle);
+
+      const buy = new PixelButton(this, panelWidth - 54, y + 23, 'Buy', 76, 40);
       buy.onClick(() => house.handleHUDAction(`buy:${item.id}`));
       this.shopPanel.add(buy);
     });

@@ -5,13 +5,59 @@ export interface DecorItem {
   label: string;
   cost: number;
   themeColor: string;
+  kind: 'theme' | 'furniture';
+  description: string;
 }
 
 export const DECOR_ITEMS: DecorItem[] = [
-  { id: 'default', label: 'Default Cozy', cost: 0, themeColor: '#2F5DAA' },
-  { id: 'sunset', label: 'Sunset Warm', cost: 25, themeColor: '#D06F3B' },
-  { id: 'mint', label: 'Mint Fresh', cost: 25, themeColor: '#5F9D76' },
-  { id: 'retro', label: 'Retro Toybox', cost: 40, themeColor: '#A85A7C' },
+  {
+    id: 'default',
+    label: 'Default Cozy',
+    cost: 0,
+    themeColor: '#2F5DAA',
+    kind: 'theme',
+    description: 'Classic house palette',
+  },
+  {
+    id: 'sunset',
+    label: 'Sunset Warm',
+    cost: 25,
+    themeColor: '#D06F3B',
+    kind: 'theme',
+    description: 'Warm evening tones',
+  },
+  {
+    id: 'mint',
+    label: 'Mint Fresh',
+    cost: 25,
+    themeColor: '#5F9D76',
+    kind: 'theme',
+    description: 'Fresh green palette',
+  },
+  {
+    id: 'retro',
+    label: 'Retro Toybox',
+    cost: 40,
+    themeColor: '#A85A7C',
+    kind: 'theme',
+    description: 'Playful vintage palette',
+  },
+  {
+    id: 'cat_tree',
+    label: 'Window Cat Tree',
+    cost: 60,
+    themeColor: '#9B6E43',
+    kind: 'furniture',
+    description: 'Sleep perch near window',
+  },
+  {
+    id: 'cat_bed',
+    label: 'Cloud Cat Bed',
+    cost: 45,
+    themeColor: '#8A7EC7',
+    kind: 'furniture',
+    description: 'Soft floor sleeping bed',
+  },
 ];
 
 export class EconomySystem {

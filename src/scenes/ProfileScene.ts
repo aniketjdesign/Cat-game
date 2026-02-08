@@ -23,7 +23,8 @@ export class ProfileScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.cameras.main.setBackgroundColor('#20373a');
+    // warm dark background matching the cozy palette
+    this.cameras.main.setBackgroundColor('#1a1410');
     const state = this.registry.get('gameState');
 
     // Ensure legacy saves have the new profile fields.
@@ -31,23 +32,43 @@ export class ProfileScene extends Phaser.Scene {
       state.playerProfile.gender = 'neutral';
     }
 
-    this.add.text(GAME_WIDTH / 2, 54, 'Create Your Character', {
+    // wood border frame
+    this.add.rectangle(GAME_WIDTH / 2, 0, GAME_WIDTH, 8, 0x5c3d2e).setOrigin(0.5, 0);
+    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - 8, GAME_WIDTH, 8, 0x5c3d2e).setOrigin(0.5, 0);
+    this.add.rectangle(0, GAME_HEIGHT / 2, 8, GAME_HEIGHT, 0x5c3d2e).setOrigin(0, 0.5);
+    this.add.rectangle(GAME_WIDTH - 8, GAME_HEIGHT / 2, 8, GAME_HEIGHT, 0x5c3d2e).setOrigin(0, 0.5);
+
+    // inner panel area
+    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH - 40, GAME_HEIGHT - 40, 0x2a1e14).setOrigin(0.5)
+      .setStrokeStyle(2, 0x8b6b42);
+
+    // title
+    this.add.text(GAME_WIDTH / 2, 46, 'Create Your Character', {
       fontFamily: 'monospace',
-      fontSize: '46px',
-      color: '#f8ffe8',
+      fontSize: '42px',
+      color: '#f5e6c8',
+      stroke: '#5c3d2e',
+      strokeThickness: 4,
     }).setOrigin(0.5);
 
-    const playerPreview = this.add.sprite(260, 350, 'player_sheet', 0).setScale(8);
+    // decorative divider under title
+    this.add.rectangle(GAME_WIDTH / 2, 76, 400, 2, 0x8b6b42).setOrigin(0.5);
+
+    // preview showcase frame (left side)
+    this.add.rectangle(260, 350, 240, 280, 0x5c3d2e).setOrigin(0.5);
+    this.add.rectangle(260, 350, 230, 270, 0x2a1e14).setOrigin(0.5);
+
+    const playerPreview = this.add.sprite(260, 330, 'player_sheet', 0).setScale(7);
     this.tweens.add({
       targets: playerPreview,
-      y: 360,
+      y: 340,
       duration: 1200,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.inOut',
     });
 
-    const catPreview = this.add.sprite(420, 420, `cat_${state.catProfile.breedId}`, 0).setScale(4.6);
+    const catPreview = this.add.sprite(380, 420, `cat_${state.catProfile.breedId}`, 0).setScale(4);
     let catPreviewFrame = 0;
     this.time.addEvent({
       delay: 220,
@@ -64,10 +85,23 @@ export class ProfileScene extends Phaser.Scene {
       playerPreview.setFrame(0);
     };
 
-    const nameInput = new TextInput(this, 730, 132, { width: 360, maxLength: 12, placeholder: 'Player Name' });
+    // name input labels
+    this.add.text(544, 108, 'Player Name', {
+      fontFamily: 'monospace',
+      fontSize: '14px',
+      color: '#c49a5a',
+    });
+
+    const nameInput = new TextInput(this, 730, 138, { width: 360, maxLength: 12, placeholder: 'Player Name' });
     nameInput.setValue(state.playerProfile.name);
     nameInput.onChange((value) => {
       state.playerProfile.name = value || state.playerProfile.name;
+    });
+
+    this.add.text(544, 178, 'Cat Name', {
+      fontFamily: 'monospace',
+      fontSize: '14px',
+      color: '#c49a5a',
     });
 
     const catNameInput = new TextInput(this, 730, 208, { width: 360, maxLength: 12, placeholder: 'Cat Name' });
@@ -76,21 +110,24 @@ export class ProfileScene extends Phaser.Scene {
       state.catProfile.name = value || state.catProfile.name;
     });
 
-    const pronounText = this.add.text(540, 264, `Pronouns: ${state.playerProfile.pronouns}`, {
+    const pronounText = this.add.text(540, 260, `Pronouns: ${state.playerProfile.pronouns}`, {
       fontFamily: 'monospace',
-      fontSize: '20px',
-      color: '#f4ffdb',
+      fontSize: '18px',
+      color: '#f5e6c8',
     });
 
-    const cyclePronoun = new PixelButton(this, 900, 264, 'Cycle', 90, 48);
+    const cyclePronoun = new PixelButton(this, 900, 260, 'Cycle', 90, 48);
     cyclePronoun.onClick(() => {
       const idx = PRONOUNS.indexOf(state.playerProfile.pronouns);
       state.playerProfile.pronouns = PRONOUNS[(idx + 1) % PRONOUNS.length];
       pronounText.setText(`Pronouns: ${state.playerProfile.pronouns}`);
     });
 
-    const rowStartY = 314;
-    const rowGap = 52;
+    // divider before steppers
+    this.add.rectangle(730, 290, 380, 1, 0x5c3d2e).setOrigin(0.5);
+
+    const rowStartY = 310;
+    const rowGap = 48;
 
     const addStepper = (
       label: string,
@@ -104,12 +141,12 @@ export class ProfileScene extends Phaser.Scene {
       const y = rowStartY + row * rowGap;
       const text = this.add.text(540, y, `${label}: ${display(getter())}`, {
         fontFamily: 'monospace',
-        fontSize: '20px',
-        color: '#f4ffdb',
+        fontSize: '18px',
+        color: '#f5e6c8',
       });
 
-      const left = new PixelButton(this, 848, y + 10, '-', 56, 48);
-      const right = new PixelButton(this, 914, y + 10, '+', 56, 48);
+      const left = new PixelButton(this, 848, y + 10, '<', 48, 40);
+      const right = new PixelButton(this, 910, y + 10, '>', 48, 40);
 
       const repaint = () => {
         text.setText(`${label}: ${display(getter())}`);
@@ -174,7 +211,7 @@ export class ProfileScene extends Phaser.Scene {
       state.houseDecorState.activeTheme = OUTFIT_COLORS[v % OUTFIT_COLORS.length];
     }, OUTFIT_COLORS.length, (v) => `${v + 1}`);
 
-    const startButton = new PixelButton(this, GAME_WIDTH / 2, GAME_HEIGHT - 56, 'Start My Life Together', 420, 72);
+    const startButton = new PixelButton(this, GAME_WIDTH / 2, GAME_HEIGHT - 48, 'Start My Life Together', 420, 72);
     startButton.onClick(() => {
       this.registry.set('gameState', state);
       this.scene.start('HouseScene');

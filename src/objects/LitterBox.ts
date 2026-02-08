@@ -6,7 +6,7 @@ export class LitterBox extends InteractiveObject {
   dirtyLevel = 20;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, 'litter_box', 'obj_litter_box', x, y, 'Litter Box', 84);
+    super(scene, 'litter_box', 'obj_litter_box', x, y, 'Litter Box', 84, 'Clean litter');
   }
 
   increaseDirt(amount: number): void {

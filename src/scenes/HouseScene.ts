@@ -2,7 +2,9 @@ import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from '../constants';
 import { AssetGenerator } from '../assets/AssetGenerator';
 import { Cabinet } from '../objects/Cabinet';
+import { CatBed } from '../objects/CatBed';
 import { Cat } from '../objects/Cat';
+import { CatTree } from '../objects/CatTree';
 import { FoodBowl } from '../objects/FoodBowl';
 import { InteractiveObject } from '../objects/InteractiveObject';
 import { LitterBox } from '../objects/LitterBox';
@@ -45,7 +47,14 @@ export class HouseScene extends Phaser.Scene {
 
   private objects: InteractiveObject[] = [];
   private objectBySprite = new Map<Phaser.GameObjects.Image, InteractiveObject>();
+  private objectById = new Map<string, InteractiveObject>();
   private pendingInteraction: InteractiveObject | null = null;
+  private pendingCatPet = false;
+
+  private introCenterPending = true;
+  private introCenterTarget = new Phaser.Math.Vector2(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 10);
+  private introMarker?: Phaser.GameObjects.Arc;
+  private introLabel?: Phaser.GameObjects.Text;
 
   private wallLayer!: Phaser.Tilemaps.TilemapLayer;
 
@@ -74,15 +83,18 @@ export class HouseScene extends Phaser.Scene {
     }
 
     this.createTilemap();
+    this.applyDecorTheme(this.state.houseDecorState.activeTheme);
 
     this.player = new Player(this, 520, 560);
     this.cat = new Cat(this, 420, 520, this.state.catProfile.breedId);
+    this.cat.setInteractive({ cursor: 'pointer' });
     this.cat.setHouseBounds(new Phaser.Geom.Rectangle(80, 180, 860, 520));
 
     this.physics.add.collider(this.player, this.wallLayer);
     this.physics.add.collider(this.cat, this.wallLayer);
 
     this.createInteractiveObjects();
+    this.createCenterIntroPrompt();
 
     this.inputController = new InputController(this);
 
@@ -188,7 +200,11 @@ export class HouseScene extends Phaser.Scene {
   }
 
   private createInteractiveObjects(): void {
-    const all = [
+    this.objects = [];
+    this.objectBySprite.clear();
+    this.objectById.clear();
+
+    const all: InteractiveObject[] = [
       new Cabinet(this, 850, 180),
       new FoodBowl(this, 820, 330),
       new WaterBowl(this, 900, 330),
@@ -197,16 +213,81 @@ export class HouseScene extends Phaser.Scene {
     ];
 
     for (const object of all) {
-      object.sprite.setInteractive({ cursor: 'pointer' });
-      this.objectBySprite.set(object.sprite, object);
+      this.addInteractiveObject(object);
     }
 
-    this.objects = all;
+    this.ensurePurchasedFurniturePresent();
+  }
+
+  private addInteractiveObject(object: InteractiveObject): void {
+    object.sprite.setInteractive({ cursor: 'pointer' });
+    this.objectBySprite.set(object.sprite, object);
+    this.objectById.set(object.id, object);
+    this.objects.push(object);
+  }
+
+  private ensurePurchasedFurniturePresent(): void {
+    for (const id of this.state.economyState.purchasedDecorIds) {
+      this.spawnFurnitureById(id);
+    }
+  }
+
+  private spawnFurnitureById(id: string): void {
+    if (id === 'cat_tree' && !this.objectById.has(id)) {
+      this.addInteractiveObject(new CatTree(this, 250, 200));
+      return;
+    }
+
+    if (id === 'cat_bed' && !this.objectById.has(id)) {
+      this.addInteractiveObject(new CatBed(this, 620, 540));
+    }
+  }
+
+  private createCenterIntroPrompt(): void {
+    this.introMarker = this.add.circle(this.introCenterTarget.x, this.introCenterTarget.y, 36, 0xd8f4b2, 0.2);
+    this.introMarker.setStrokeStyle(3, 0xbecf98, 0.8);
+    this.introMarker.setDepth(4);
+
+    this.introLabel = this.add.text(this.introCenterTarget.x, this.introCenterTarget.y - 54, 'Move Here To Start', {
+      fontFamily: 'monospace',
+      fontSize: '18px',
+      color: '#f1ffd5',
+      stroke: '#233320',
+      strokeThickness: 3,
+    }).setOrigin(0.5);
+    this.introLabel.setDepth(4);
+
+    this.tweens.add({
+      targets: this.introMarker,
+      scaleX: 1.18,
+      scaleY: 1.18,
+      alpha: 0.32,
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut',
+    });
+
+    this.emitToast('Move to the glowing center spot to begin');
   }
 
   private async handlePointerDown(pointer: Phaser.Input.Pointer): Promise<void> {
     const gameObjects = this.input.manager.hitTest(pointer, this.children.list, this.cameras.main);
-    const objectSprite = gameObjects.find((entry): entry is Phaser.GameObjects.Image => entry instanceof Phaser.GameObjects.Image);
+    if (gameObjects.includes(this.cat)) {
+      const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.cat.x, this.cat.y);
+      if (distance <= 96) {
+        this.petCat();
+      } else {
+        this.pendingCatPet = true;
+        await this.movePlayerTo(this.cat.x, this.cat.y + 24);
+      }
+      return;
+    }
+
+    const objectSprite = gameObjects.find(
+      (entry): entry is Phaser.GameObjects.Image =>
+        entry instanceof Phaser.GameObjects.Image && this.objectBySprite.has(entry),
+    );
 
     if (objectSprite && this.objectBySprite.has(objectSprite)) {
       const target = this.objectBySprite.get(objectSprite)!;
@@ -221,6 +302,7 @@ export class HouseScene extends Phaser.Scene {
 
     await this.movePlayerTo(pointer.worldX, pointer.worldY);
     this.pendingInteraction = null;
+    this.pendingCatPet = false;
   }
 
   private async movePlayerTo(worldX: number, worldY: number): Promise<void> {
@@ -314,6 +396,12 @@ export class HouseScene extends Phaser.Scene {
     this.game.events.emit(Events.Toast, payload);
   }
 
+  private petCat(): void {
+    this.game.events.emit(Events.GameplayAction, { action: 'pet' });
+    this.cat.reactHappy(1.4);
+    this.emitToast('You pet your cat');
+  }
+
   update(_time: number, delta: number): void {
     const deltaSeconds = delta / 1000;
     const input = this.inputController.update();
@@ -321,6 +409,7 @@ export class HouseScene extends Phaser.Scene {
     if (input.mode === 'keyboard' && (Math.abs(input.moveX) > 0 || Math.abs(input.moveY) > 0)) {
       this.player.setMoveAxis(input.moveX, input.moveY);
       this.pendingInteraction = null;
+      this.pendingCatPet = false;
     } else {
       this.player.setMoveAxis(0, 0);
     }
@@ -336,8 +425,38 @@ export class HouseScene extends Phaser.Scene {
       this.pendingInteraction = null;
     }
 
-    const shouldFollowPlayer = this.player.carryingItem !== null;
-    this.cat.update(deltaSeconds, shouldFollowPlayer, new Phaser.Math.Vector2(this.player.x, this.player.y));
+    if (this.pendingCatPet && !this.player.hasPath()) {
+      const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.cat.x, this.cat.y);
+      if (distance <= 96) {
+        this.petCat();
+      } else {
+        this.emitToast('Cat moved. Tap again to pet');
+      }
+      this.pendingCatPet = false;
+    }
+
+    if (this.introCenterPending) {
+      const distanceToCenter = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        this.introCenterTarget.x,
+        this.introCenterTarget.y,
+      );
+      if (distanceToCenter <= 82) {
+        this.introCenterPending = false;
+        this.introMarker?.destroy();
+        this.introLabel?.destroy();
+        this.emitToast('Nice! Grab a toy, food, or water to interact');
+      }
+    }
+
+    const catMode =
+      this.player.carryingItem === 'toy'
+        ? 'play'
+        : this.player.carryingItem !== null
+          ? 'follow'
+          : 'idle';
+    this.cat.update(deltaSeconds, catMode, new Phaser.Math.Vector2(this.player.x, this.player.y));
 
     const tickResult = this.timeSystem.tick(deltaSeconds);
     const growthMultiplier = this.growthSystem.computeNeedMultiplier(this.state.catProfile.growthStage);
@@ -380,21 +499,26 @@ export class HouseScene extends Phaser.Scene {
     }
 
     if (action === 'pet') {
-      this.game.events.emit(Events.GameplayAction, { action: 'pet' });
-      this.cat.reactHappy();
+      this.petCat();
       return;
     }
 
     if (action.startsWith('buy:')) {
       const id = action.replace('buy:', '');
+      const alreadyOwned = this.state.economyState.purchasedDecorIds.includes(id);
       const result = this.economySystem.purchaseDecor(id);
       if (result.success) {
         const item = DECOR_ITEMS.find((entry) => entry.id === id);
         if (item) {
-          this.state.houseDecorState.activeTheme = item.themeColor;
-          this.applyDecorTheme(item.themeColor);
+          if (item.kind === 'theme') {
+            this.state.houseDecorState.activeTheme = item.themeColor;
+            this.applyDecorTheme(item.themeColor);
+            this.emitToast(alreadyOwned ? `${item.label} already active` : `${item.label} applied`);
+          } else {
+            this.spawnFurnitureById(item.id);
+            this.emitToast(alreadyOwned ? `${item.label} already owned` : `${item.label} purchased`);
+          }
         }
-        this.emitToast('Decor purchased');
         const achievement = this.achievementSystem.unlock('first_shop');
         if (achievement) {
           this.game.events.emit(Events.AchievementUnlocked, achievement);

@@ -10,6 +10,7 @@ export interface TextInputOptions {
 export class TextInput extends Phaser.GameObjects.Container {
   private static activeInput: TextInput | null = null;
 
+  private readonly border: Phaser.GameObjects.Rectangle;
   private readonly bg: Phaser.GameObjects.Rectangle;
   private readonly textObj: Phaser.GameObjects.Text;
   private readonly caret: Phaser.GameObjects.Text;
@@ -23,26 +24,31 @@ export class TextInput extends Phaser.GameObjects.Container {
 
     const width = options.width ?? 280;
     this.maxLength = options.maxLength ?? 12;
+    const h = Math.max(60, INPUT_TARGET_MIN_SIZE);
 
-    this.bg = scene.add.rectangle(0, 0, width, Math.max(60, INPUT_TARGET_MIN_SIZE), 0xffffff).setOrigin(0.5);
-    this.bg.setStrokeStyle(3, 0x445434);
+    // dark-wood outer border
+    this.border = scene.add.rectangle(0, 0, width + 4, h + 4, 0x5c3d2e).setOrigin(0.5);
+
+    // parchment inner fill
+    this.bg = scene.add.rectangle(0, 0, width, h, 0xfaf4e4).setOrigin(0.5);
+    this.bg.setStrokeStyle(2, 0x8b6b42);
 
     this.textObj = scene.add.text(-width / 2 + 12, 0, options.placeholder ?? '', {
       fontFamily: 'monospace',
       fontSize: '24px',
-      color: '#2a2a2a',
+      color: '#2a1a0e',
     }).setOrigin(0, 0.5);
 
     this.caret = scene.add.text(-width / 2 + 12, 0, '|', {
       fontFamily: 'monospace',
       fontSize: '24px',
-      color: '#1a1a1a',
+      color: '#5c3d2e',
     }).setOrigin(0, 0.5);
 
-    this.add([this.bg, this.textObj, this.caret]);
+    this.add([this.border, this.bg, this.textObj, this.caret]);
     this.caret.setVisible(false);
 
-    this.setSize(width, this.bg.height);
+    this.setSize(width, h);
     scene.add.existing(this);
 
     this.bg.setInteractive({ useHandCursor: true });
@@ -60,9 +66,7 @@ export class TextInput extends Phaser.GameObjects.Container {
     });
 
     scene.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
-      if (!this.focused) {
-        return;
-      }
+      if (!this.focused) return;
 
       if (event.key === 'Backspace') {
         this.value = this.value.slice(0, -1);
@@ -101,7 +105,8 @@ export class TextInput extends Phaser.GameObjects.Container {
     }
 
     this.focused = active;
-    this.bg.setStrokeStyle(3, active ? 0x99c15f : 0x445434);
+    this.bg.setStrokeStyle(2, active ? 0xc49a5a : 0x8b6b42);
+    this.border.setFillStyle(active ? 0x8b6b42 : 0x5c3d2e);
     this.caret.setVisible(active);
   }
 

@@ -18,6 +18,7 @@ export abstract class InteractiveObject {
   protected highlight: Phaser.GameObjects.Rectangle;
   isPlayerInRange = false;
   label: string;
+  protected interactionHint: string;
 
   protected constructor(
     protected readonly scene: Phaser.Scene,
@@ -27,9 +28,11 @@ export abstract class InteractiveObject {
     y: number,
     label: string,
     radius = 72,
+    hint = 'Tap Use',
   ) {
     this.id = id;
     this.label = label;
+    this.interactionHint = hint;
     this.interactionRadiusPx = radius;
 
     this.sprite = scene.add.image(x, y, texture).setScale(3);
@@ -48,7 +51,13 @@ export abstract class InteractiveObject {
       this.setHighlighted(overlapping);
 
       if (overlapping) {
-        this.scene.game.events.emit(Events.InteractionEnter, { id: this.id, label: this.label, x: this.sprite.x, y: this.sprite.y - 50 });
+        this.scene.game.events.emit(Events.InteractionEnter, {
+          id: this.id,
+          label: this.label,
+          hint: this.interactionHint,
+          x: this.sprite.x,
+          y: this.sprite.y - 52,
+        });
       } else {
         this.scene.game.events.emit(Events.InteractionExit, { id: this.id });
       }

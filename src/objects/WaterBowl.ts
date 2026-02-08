@@ -6,13 +6,14 @@ export class WaterBowl extends InteractiveObject {
   waterLevel = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, 'water_bowl', 'obj_water_bowl', x, y, 'Water Bowl', 70);
+    super(scene, 'water_bowl', 'obj_water_bowl', x, y, 'Water Bowl', 70, 'Refill or serve');
   }
 
   onInteract(context: InteractionContext): void {
     if (context.player.carryingItem === 'water') {
       context.player.setCarrying(null);
       this.waterLevel = 100;
+      context.cat.goDrinkAt(this.getInteractionPoint());
       context.events.emit(Events.GameplayAction, { action: 'water' });
       context.events.emit(Events.Toast, { message: 'Water refreshed' });
       return;
@@ -24,7 +25,7 @@ export class WaterBowl extends InteractiveObject {
     }
 
     this.waterLevel = Math.max(0, this.waterLevel - 35);
-    context.cat.reactHappy();
+    context.cat.goDrinkAt(this.getInteractionPoint());
     context.events.emit(Events.Toast, { message: 'Cat had a drink' });
   }
 }

@@ -6,7 +6,7 @@ export class Toy extends InteractiveObject {
   private active = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, 'toy_basket', 'obj_toy_basket', x, y, 'Toy Basket', 78);
+    super(scene, 'toy_basket', 'obj_toy_basket', x, y, 'Toy Basket', 78, 'Start toy play');
   }
 
   onInteract(context: InteractionContext): void {

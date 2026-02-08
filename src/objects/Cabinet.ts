@@ -4,7 +4,7 @@ import { InteractiveObject, InteractionContext } from './InteractiveObject';
 
 export class Cabinet extends InteractiveObject {
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, 'cabinet', 'obj_cabinet', x, y, 'Cabinet', 80);
+    super(scene, 'cabinet', 'obj_cabinet', x, y, 'Cabinet', 80, 'Pick up cat food');
   }
 
   onInteract(context: InteractionContext): void {
