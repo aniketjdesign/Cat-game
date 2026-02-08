@@ -1,0 +1,22 @@
+{
+  "name": "cat-game",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vite": "^7.2.4",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "easystarjs": "^0.4.4",
+    "phaser": "^3.90.0",
+    "tone": "^15.1.22"
+  }
+}
